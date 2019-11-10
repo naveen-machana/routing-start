@@ -1,22 +1,41 @@
 import { Component, OnInit } from '@angular/core';
 
 import { ServersService } from '../servers.service';
-import { ActivatedRoute, Params } from '@angular/router';
+import { ActivatedRoute, Params, Router } from '@angular/router';
+import { CanComponentDeactivate } from './can-component-deactivate.service';
+import { Observable } from 'rxjs/Observable';
 
 @Component({
   selector: 'app-edit-server',
   templateUrl: './edit-server.component.html',
   styleUrls: ['./edit-server.component.css']
 })
-export class EditServerComponent implements OnInit {
+export class EditServerComponent implements OnInit, CanComponentDeactivate {
+  canComponentDeactivate(): boolean | Observable<boolean> | Promise<boolean> {
+    if (!this.allowEdit) {
+      return true;
+    }
+
+    if (
+      !this.changesSaved &&
+      (this.server.name !== this.serverName ||
+        this.server.status !== this.serverStatus)
+    ) {
+      return confirm('Do you want to ignore the changes');
+    } else {
+      return true;
+    }
+  }
   server: { id: number; name: string; status: string };
   serverName = '';
   serverStatus = '';
   allowEdit = false;
+  changesSaved = false;
 
   constructor(
     private serversService: ServersService,
-    private activatedRoute: ActivatedRoute
+    private activatedRoute: ActivatedRoute,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -40,5 +59,7 @@ export class EditServerComponent implements OnInit {
       name: this.serverName,
       status: this.serverStatus
     });
+    this.changesSaved = true;
+    this.router.navigate(['../'], { relativeTo: this.activatedRoute });
   }
 }
